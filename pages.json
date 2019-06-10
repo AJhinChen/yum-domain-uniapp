@@ -1,0 +1,24 @@
+{
+	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+		{
+			"path": "pages/index/index",
+			"style": {
+				"enablePullDownRefresh": true,
+				"navigationBarTitleText": "云域名"
+			}
+		},
+		{
+			"path": "pages/index/detail/detail",
+			"style": {
+				"enablePullDownRefresh": true,
+				"navigationBarTitleText": "域名注册信息（WHOIS）"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "云域名",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	}
+}
