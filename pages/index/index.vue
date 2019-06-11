@@ -36,7 +36,7 @@
 						<text class="text-price text-grey">{{row.originPrice + '				'}}</text>
 						现价: -->
 						百度云售价:
-						<text class="text-price text-red" style="font-size: 20px;">{{row.price}}</text>
+						<text class="text-price text-red">{{row.price}}</text>
 					</view>
 				</view>
 			</view>
@@ -46,7 +46,7 @@
 		</view> -->
 		<uni-fab v-if="!searchShow" ref="fab" :pattern="pattern" :content="content" :horizontal="horizontal" :vertical="vertical" :direction="direction" @trigger="trigger" />
 		<view v-else class="cu-form-group">
-			<input ref="search" confirm-type="search" placeholder="请输入域名名称" maxlength="15" @input="onKeyInput" @confirm="confirm"></input>
+			<input type="text" focus="{{inputShow}}" confirm-type="search" placeholder="请输入域名名称" maxlength="15" @input="onKeyInput" @confirm="confirm"></input>
 			<button class='cu-btn shadow' style="background-color: #1296db;color: #F1F1F1;" @tap="confirm">{{searchName}}</button>
 		</view>
 
@@ -104,6 +104,7 @@
 					}
 				],
 				searchShow: true,
+				inputShow: false,
 				loading: false,
 				common: [],
 				recommend: [],
@@ -126,25 +127,12 @@
 				this.searchShow = true
 				this.searchName = '换一批'
 				if (e.index == 0) {
-					 // 使页面滚动到底部
-					 wx.pageScrollTo({
-					   scrollTop: 10000
-					 })
-					// this.$nextTick(() => {
-					// 	this.$refs.search.focus()
-					// })
+					this.domain = ''
+					this.inputShow = true
 				} else{
 					this.domain = ''
 					this.initRecommendData()
 				}
-			},
-			pageScrollToBottom: function () {
-			   wx.createSelectorQuery().select('#j_page').boundingClientRect(function (rect) {
-				 // 使页面滚动到底部
-				 wx.pageScrollTo({
-				   scrollTop: rect.bottom
-				 })
-			   }).exec()
 			},
 			hideModalAndPush() {
 				
@@ -168,6 +156,11 @@
 				this.initRecommendData()
 			},
 			confirm() {
+				// 使页面滚动到底部
+				wx.pageScrollTo({
+				   scrollTop: 0
+				})
+				this.inputShow = false
 				// let regex = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/
 				if (this.domain == '') {
 					this.initRecommendData()
@@ -203,15 +196,16 @@
 					}
 				}).then(res => {
 					uni.setNavigationBarTitle({
-						title: "云域名:"+this.domain
+						title: this.domain
 					})
 					uni.hideToast()
 					uni.stopPullDownRefresh()
 					const success = res[1].data.success
+					const accurate = res[1].data.result.accurate
 					const common = res[1].data.result.common
 					const recommend = res[1].data.result.recommend
 					if (success == true) {
-						this.common = common
+						this.common = accurate.length > 0 ? accurate.concat(common) : common
 						this.recommend = recommend
 						this.searchShow = false
 					} else{
@@ -232,7 +226,12 @@
 					title: "推荐域名"
 				})
 				const arr = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-				this.label = arr[Math.floor(Math.random() * 26)] + arr[Math.floor(Math.random() * 26)] + arr[Math.floor(Math.random() * 26)] + arr[Math.floor(Math.random() * 26)] + arr[Math.floor(Math.random() * 26)]
+				//随机生成3-5位数的.com域名
+				const domainLength = Math.floor(Math.random() * 3) + 3
+				this.label = ''
+				for (var i = 0; i < domainLength; i++) {
+					this.label += arr[Math.floor(Math.random() * 26)]
+				}
 				this.tld = '.com'
 				
 				uni.showToast({
