@@ -1,9 +1,9 @@
 <template>
 	<view>
-		<view style="min-height: calc(100vh - 50px);">
+		<view style="min-height: calc(100vh - 70px);">
 			<page-head v-if="recommend==null||recommend.length==0" :title="noData"></page-head>
 			<view class="cu-list menu solid-top" style="margin: 0;" v-for="(row,index) in common" :key="index">
-				<view class="cu-item" @tap="loadDomainStatus(row.domainName)">
+				<view class="cu-item" :class="viewAnimation" :style="[{animationDelay: (index + 1)*0.1 + 's'}]" @tap="loadDomainStatus(row.domainName)">
 					<view class="content padding-tb-sm">
 						<view style="font-size: 35rpx;">
 							<text class="cuIcon-tagfill text-red margin-right-xs"></text>
@@ -17,12 +17,12 @@
 						<text class="text-price text-grey">{{row.originPrice + '				'}}</text>
 						现价: -->
 						百度云售价:
-						<text class="text-price text-red">{{row.price}}</text>
+						<text class="text-price text-red" style="font-size: 16px;">{{row.price}}</text>
 					</view>
 				</view>
 			</view>
 			<view class="cu-list menu solid-top" style="margin: 0;" v-for="(row,index) in recommend" :key="index">
-				<view class="cu-item" @tap="loadDomainStatus(row.domainName)">
+				<view class="cu-item" :class="viewAnimation" :style="[{animationDelay: (index + common.length + 1)*0.1 + 's'}]" @tap="loadDomainStatus(row.domainName)">
 					<view class="content padding-tb-sm">
 						<view style="font-size: 35rpx;">
 							<text class="cuIcon-tagfill text-red margin-right-xs"></text>
@@ -36,7 +36,7 @@
 						<text class="text-price text-grey">{{row.originPrice + '				'}}</text>
 						现价: -->
 						百度云售价:
-						<text class="text-price text-red">{{row.price}}</text>
+						<text class="text-price text-red" style="font-size: 16px;">{{row.price}}</text>
 					</view>
 				</view>
 			</view>
@@ -45,9 +45,9 @@
 			<button class='cu-btn shadow' style="background-color: #1296db;color: #F1F1F1;" @tap="shake">换一批</button>
 		</view> -->
 		<uni-fab v-if="!searchShow" ref="fab" :pattern="pattern" :content="content" :horizontal="horizontal" :vertical="vertical" :direction="direction" @trigger="trigger" />
-		<view v-else class="cu-form-group">
-			<input type="text" focus="{{inputShow}}" confirm-type="search" placeholder="请输入域名名称" maxlength="15" @input="onKeyInput" @confirm="confirm"></input>
-			<button class='cu-btn shadow' style="background-color: #1296db;color: #F1F1F1;" @tap="confirm">{{searchName}}</button>
+		<view v-else class="cu-form-group" style="height: 70px">
+			<input type="text" style="height: 1.8rem;" focus="{{inputShow}}" confirm-type="search" placeholder="请输入域名名称" maxlength="15" @input="onKeyInput" @confirm="confirm"></input>
+			<button class='cu-btn animation-reverse shadow' :class="animation" style="background-color: #1296db;color: #F1F1F1; height: 40px;" @tap="confirm">{{searchName}}</button>
 		</view>
 
 		<view class="cu-modal" :class="modalName=='Image'?'show':''">
@@ -106,6 +106,8 @@
 				searchShow: true,
 				inputShow: false,
 				loading: false,
+				animation: '',
+				viewAnimation: '',
 				common: [],
 				recommend: [],
 				noData: '查无数据',
@@ -147,7 +149,7 @@
 					this.searchName = '换一批'
 					this.initRecommendData()
 				} else{
-					this.searchName = '搜索'
+					this.searchName = '搜  索'
 					this.label = this.domain.split('.')[0]
 					this.tld = this.domain.split('.')[1]?this.domain.split('.')[1]:''
 				}
@@ -155,11 +157,7 @@
 			shake() {
 				this.initRecommendData()
 			},
-			confirm() {
-				// 使页面滚动到底部
-				wx.pageScrollTo({
-				   scrollTop: 0
-				})
+			confirm(e) {
 				this.inputShow = false
 				// let regex = /^(?=^.{3,255}$)[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+$/
 				if (this.domain == '') {
@@ -171,6 +169,10 @@
 						duration: 2000
 					})
 				} else if (this.domain.split('.').length == 2 || this.tld == '') {
+					// 使页面滚动到顶部
+					wx.pageScrollTo({
+					   scrollTop: 0
+					})
 					this.initData()
 				} else{
 					uni.showToast({
@@ -181,9 +183,8 @@
 				}
 			},
 			initData() {
-				uni.showToast({
-					title:'查询中',
-					icon:'loading'
+				uni.showLoading({
+					title:'查询中'
 				})
 				uni.request({
 					method: 'POST',
@@ -196,10 +197,8 @@
 					}
 				}).then(res => {
 					uni.setNavigationBarTitle({
-						title: this.domain
+						title: this.domain.length>0?this.domain:'推荐域名'
 					})
-					uni.hideToast()
-					uni.stopPullDownRefresh()
 					const success = res[1].data.success
 					const accurate = res[1].data.result.accurate
 					const common = res[1].data.result.common
@@ -208,13 +207,19 @@
 						this.common = accurate.length > 0 ? accurate.concat(common) : common
 						this.recommend = recommend
 						this.searchShow = false
+						this.viewAnimation = 'animation-slide-bottom'
+						setTimeout(()=>{
+							this.viewAnimation = ''
+						}, 1000)
 					} else{
 						this.common = null
 						this.recommend = null
 					}
 					this.loading = false
+					uni.hideLoading()
+					uni.stopPullDownRefresh()
 				}).catch(err => {
-					uni.hideToast()
+					uni.hideLoading()
 					uni.stopPullDownRefresh()
 					this.common = null
 					this.recommend = null
@@ -222,6 +227,7 @@
 				});
 			},
 			initRecommendData() {
+				this.animation = 'animation-shake'
 				uni.setNavigationBarTitle({
 					title: "推荐域名"
 				})
@@ -234,9 +240,8 @@
 				}
 				this.tld = '.com'
 				
-				uni.showToast({
-					title:'查询中',
-					icon:'loading'
+				uni.showLoading({
+					title:'查询中'
 				})
 				uni.request({
 					method: 'POST',
@@ -248,8 +253,6 @@
 						"tlds": [this.tld]
 					}
 				}).then(res => {
-					uni.hideToast()
-					uni.stopPullDownRefresh()
 					const success = res[1].data.success
 					const common = res[1].data.result.common
 					const recommend = res[1].data.result.recommend
@@ -257,24 +260,31 @@
 						this.common = common
 						const number = (wx.getSystemInfoSync().windowHeight - 50 - 64)/80 - 2
 						this.recommend = recommend.slice(0,number)
+						this.viewAnimation = 'animation-slide-bottom'
+						setTimeout(()=>{
+							this.viewAnimation = ''
+						}, 1000)
 					} else{
 						this.common = null
 						this.recommend = null
 					}
 					this.loading = false
-				}).catch(err => {
-					uni.hideToast()
+					this.animation = ''
+					uni.hideLoading()
 					uni.stopPullDownRefresh()
+				}).catch(err => {
 					this.common = null
 					this.recommend = null
 					this.loading = false;
+					this.animation = ''
+					uni.hideLoading()
+					uni.stopPullDownRefresh()
 				});
 			},
 			loadDomainStatus(domain) {
-				uni.showToast({
-					title: "查询中",
-					icon: "loading"
-				})
+				uni.showLoading({
+					title: '查询中'
+				});
 				const label = domain.split('.')[0]
 				const tld = domain.split('.')[1]
 				uni.request({
@@ -287,7 +297,6 @@
 					const success = res[1].data.success
 					const status = res[1].data.result.accurate[0].status
 					const domainName = res[1].data.result.accurate[0].domainName
-					uni.hideToast()
 					if (success == true && status == 'UNREGISTERED') {
 						uni.showModal({
 							content: "恭喜您，域名未注册！请及时到百度云等交易所购买",
@@ -309,13 +318,14 @@
 						})
 					}
 					this.loading = false
+					uni.hideLoading()
 				}).catch(err => {
+					uni.hideLoading()
+					this.loading = false;
 					uni.showToast({
 						title: "啊呀，出错了",
 						icon:'none',
-						duration: 2000
 					})
-					this.loading = false;
 				});
 			}
 		}
@@ -323,6 +333,7 @@
 </script>
 
 <style>
+	@import "../../colorui/animation.css";
 	.logo {
 		height: 200upx;
 		width: 200upx;
